@@ -14,6 +14,7 @@ class ViewDependencies:
     self.project_file_dependencies = set()
     extensions_available = ViewDependencies.all_file_extensions(self.directory_path)
     self.search_pattern = ViewDependencies.get_pattern(extensions_available)
+    self.project_size = ViewDependencies.directory_size(self.directory_path)
 
 
   def process_direct_dependencies(self):
@@ -48,7 +49,7 @@ class ViewDependencies:
     
     sort_files.sort(reverse=True)
 
-    print(f"Size of unused files: {total_size} kb")
+    print(f"Size of unused files: {total_size} kb (out of {self.project_size} kb)")
     print(f"Showing list of unused files above {threshold_kb} kb:")
     
     for file in sort_files:
@@ -82,6 +83,23 @@ class ViewDependencies:
 
     for directory in sorted_dirs:
       print(f"{directory[0]} kb: {directory[1]}")
+
+
+  def show_used_files_in_directory(self, directory_path):
+    if not os.path.isdir(directory_path):
+      self.log_message(1, f"Directory path doesn't exist: {directory_path}")
+      return
+    
+    used_files = self.dir_used_files(directory_path)
+
+    if (len(used_files) is 0):
+      print(f"The directory {directory_path} doesn't contained dependency files.")
+    else:
+      print(f"Used files in {directory_path}:")
+      for file in used_files:
+        print(file)
+
+
 
 
   def get_directory_dependencies(self, path_to_directory):
@@ -245,8 +263,6 @@ class ViewDependencies:
     return folders 
 
 
-
-
   def remove_contained_directories(directory_list):
     directories = []
     for i in range(len(directory_list)):
@@ -271,8 +287,10 @@ class ViewDependencies:
     
     return total_size
 
+
   def file_size_kb(file_path):
     return os.path.getsize(file_path) / 1024
+
 
   def dir_is_unused(self, directory):
     for root, _, files in os.walk(directory):
@@ -282,6 +300,17 @@ class ViewDependencies:
             return False
     
     return True
+
+
+  def dir_used_files(self, directory):
+    used_dir_files = []
+    for root, _, files in os.walk(directory):
+      for file in files:
+        file_path = os.path.join(root, file)
+        if file_path in self.project_file_dependencies:
+            used_dir_files.append(file_path)
+    
+    return used_dir_files
 
 
   def get_file_extension(path_to_file):
