@@ -49,8 +49,11 @@ class ViewDependencies:
     
     sort_files.sort(reverse=True)
 
-    print(f"Size of unused files: {total_size} kb (out of {self.project_size} kb)")
-    print(f"Showing list of unused files above {threshold_kb} kb:")
+    unused_size_str = ViewDependencies.size_to_string(total_size)
+    project_size_str = ViewDependencies.size_to_string(self.project_size)
+    threshold_size_str = ViewDependencies.size_to_string(threshold_kb)
+    print(f"Size of unused files: {unused_size_str} (out of {project_size_str})")
+    print(f"Showing list of unused files above {threshold_size_str}:")
     
     for file in sort_files:
       if file[0] < threshold_kb:
@@ -58,8 +61,9 @@ class ViewDependencies:
 
       if ViewDependencies.get_file_extension(file[1]) in exclude_extensions:
         continue
-        
-      print(f"{file[0]} kb: {file[1]}")
+      
+      size_str = ViewDependencies.size_to_string(file[0])
+      print(f"{size_str}: {file[1]}")
   
 
   def show_unused_directories(self):
@@ -82,7 +86,8 @@ class ViewDependencies:
     sorted_dirs.sort(reverse=True)
 
     for directory in sorted_dirs:
-      print(f"{directory[0]} kb: {directory[1]}")
+      directory_size_str = ViewDependencies.size_to_string(directory[0])
+      print(f"{directory_size_str}: {directory[1]}")
 
 
   def show_used_files_in_directory(self, directory_path):
@@ -92,14 +97,12 @@ class ViewDependencies:
     
     used_files = self.dir_used_files(directory_path)
 
-    if (len(used_files) is 0):
+    if (len(used_files) == 0):
       print(f"The directory {directory_path} doesn't contained dependency files.")
     else:
       print(f"Used files in {directory_path}:")
       for file in used_files:
         print(file)
-
-
 
 
   def get_directory_dependencies(self, path_to_directory):
@@ -138,7 +141,7 @@ class ViewDependencies:
     elif ext in self.project_extensions:
       return self.get_file_dependencies(path_to_file, self.search_pattern)
     else:
-      self.log_message(2, f"extension {ext} is not included. {path_to_file}")
+      self.log_message(2, f"Extension {ext} is not included: {path_to_file}")
 
 
   def get_file_dependencies(self, path_to_file, search_pattern):
@@ -345,8 +348,8 @@ class ViewDependencies:
     return pattern
 
 
-  def read_file_as_string(file_path, encoding='latin-1'):
-    with open(file_path, 'r', encoding=encoding) as file:
+  def read_file_as_string(file_path, encoding_='utf-8'):
+    with open(file_path, 'r', encoding=encoding_) as file:
       file_contents = file.read()
       return ViewDependencies.clean_string(file_contents)
 
@@ -371,3 +374,16 @@ class ViewDependencies:
       tag = "Info: "
 
     print(f"{tag}{message}")
+
+
+  def size_to_string(size_in_kb):
+
+    sizes = ["kb", "mb", "gb", "tb"]
+    new_size = size_in_kb
+    counter = 0
+
+    while new_size > 1024 and counter < len(sizes):
+      new_size = new_size / 1024
+      counter += 1
+
+    return f"{new_size:.2f} {sizes[counter]}"
