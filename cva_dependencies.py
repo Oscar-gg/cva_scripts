@@ -1,3 +1,5 @@
+# @Oscar-gg
+
 class ViewDependencies:
 
   def __init__ (self, directory_path, direct_dependencies, project_extensions, log_level = 2):
@@ -6,18 +8,10 @@ class ViewDependencies:
     self.project_extensions = project_extensions
     self.log_level = log_level
 
-    self.set_initial_variables()
-
-
-  def set_initial_variables(self):
-    self.project_checked_files = set()
-    self.project_file_dependencies = set()
-    extensions_available = ViewDependencies.all_file_extensions(self.directory_path)
-    self.search_pattern = ViewDependencies.get_pattern(extensions_available)
-    self.project_size = ViewDependencies.directory_size(self.directory_path)
-
 
   def process_direct_dependencies(self):
+    self.set_initial_variables()
+
     for dependency in self.direct_dependencies:
       path_to_dependency = os.path.join(self.directory_path, dependency)
       
@@ -30,6 +24,12 @@ class ViewDependencies:
       else:
         self.log_message(2, f"DIRECT dependency does not exist: {path_to_dependency}")
 
+  def set_initial_variables(self):
+    self.project_checked_files = set()
+    self.project_file_dependencies = set()
+    extensions_available = ViewDependencies.all_file_extensions(self.directory_path)
+    self.search_pattern = ViewDependencies.get_pattern(extensions_available)
+    self.project_size = ViewDependencies.directory_size(self.directory_path)
 
   def show_unused_files(self, threshold_kb=0, exclude_extensions=[]):
     unused_files = []
@@ -91,16 +91,20 @@ class ViewDependencies:
 
 
   def show_used_files_in_directory(self, directory_path):
-    if not os.path.isdir(directory_path):
-      self.log_message(1, f"Directory path doesn't exist: {directory_path}")
+    path_to_dependency = os.path.join(self.directory_path, directory_path)
+    path_to_dependency = os.path.abspath(path_to_dependency)
+    path_to_dependency = os.path.normpath(path_to_dependency)
+
+    if not os.path.isdir(path_to_dependency):
+      self.log_message(1, f"Directory path doesn't exist: {path_to_dependency}")
       return
     
-    used_files = self.dir_used_files(directory_path)
+    used_files = self.dir_used_files(path_to_dependency)
 
     if (len(used_files) == 0):
-      print(f"The directory {directory_path} doesn't contained dependency files.")
+      print(f"The directory {path_to_dependency} doesn't contained dependency files.")
     else:
-      print(f"Used files in {directory_path}:")
+      print(f"Used files in {path_to_dependency}:")
       for file in used_files:
         print(file)
 
