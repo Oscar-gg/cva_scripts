@@ -1,24 +1,27 @@
+# @Oscar-gg
+
 class HtmlText:
-    def __init__(self, directory, files_to_process, prefix="Text_"):
+    def __init__(self, directory, files_to_process, single_file_output="FrameworkCompleto.txt", prefix="Text_"):
         self.directory = directory
         self.files_to_process = files_to_process
         self.prefix = prefix
+        self.single_file_output = os.path.join(self.directory, prefix + single_file_output)
 
 
-    def generate_text_files(self):
+    def generate_text_files(self, single_file=False):
         for file in self.files_to_process:
             file_path = os.path.join(self.directory, file)
             file_path = os.path.abspath(file_path)
             
             if os.path.isfile(file_path):
-                self.process_file(file_path)
+                self.process_file(file_path, single_file)
             elif os.path.isdir(file_path):
-                self.process_dir(file_path)
+                self.process_dir(file_path, single_file)
             else:
                 print(f"File does not exist: {file_path}")
 
 
-    def process_dir(self, dir_path):
+    def process_dir(self, dir_path, single_file):
         if not os.path.isdir(dir_path):
             print(f"Directory does not exist: {dir_path}")
             return
@@ -27,10 +30,10 @@ class HtmlText:
             for file in files:
                 file_path = os.path.join(root, file)
                 if os.path.isfile(file_path) and HtmlText.get_file_extension(file_path) == ".html":
-                    self.process_file(file_path)
+                    self.process_file(file_path, single_file)
 
 
-    def process_file(self, file_path):
+    def process_file(self, file_path, single_file):
         if not os.path.isfile(file_path) or HtmlText.get_file_extension(file_path) != ".html":
             print(f"Invalid file path or file extension: {file_path}")
             return
@@ -38,19 +41,29 @@ class HtmlText:
         output_file_path = HtmlText.insert_prefix(self.prefix, file_path)
         output_file_path = HtmlText.change_extension(output_file_path, "txt")
 
-        if os.path.isfile(output_file_path):
-            print(f"File already exists: {output_file_path}")
-            return
+        if single_file:
+            output_file_path = self.single_file_output
+        else: 
+            if os.path.isfile(output_file_path):
+                print(f"File already exists: {output_file_path}")
+                return
+
+        text = "Start: " + file_path + "\n\n" + HtmlText.get_text(file_path) + "\n" + "End: " + file_path + "\n\n"
         
-        text = HtmlText.get_text(file_path)
         if text is not None:
-            HtmlText.write_text_file(output_file_path, text)
+            if not single_file:
+                HtmlText.write_text_file(output_file_path, text)
+            else:
+                HtmlText.append_text_file(output_file_path, text)
 
 
     def write_text_file(output_path, text):
         with open(output_path, 'w', encoding='utf-8') as file:
             file.write(text)
 
+    def append_text_file(output_path, text):
+        with open(output_path, 'a', encoding='utf-8') as file:
+            file.write(text)
 
     def get_text(file_path):
         html_text = HtmlText.extract_text_from_local_html(file_path)
