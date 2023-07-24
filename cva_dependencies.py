@@ -14,11 +14,11 @@ class ViewDependencies:
 
     for dependency in self.direct_dependencies:
       path_to_dependency = os.path.join(self.directory_path, dependency)
-      
+
       path_to_dependency = os.path.abspath(path_to_dependency)
 
       if os.path.isdir(path_to_dependency):
-        self.get_directory_dependencies(path_to_dependency) 
+        self.get_directory_dependencies(path_to_dependency)
       elif os.path.isfile(path_to_dependency) and ViewDependencies.get_file_extension(path_to_dependency) in self.project_extensions:
         self.process_file_dependencies(path_to_dependency)
       else:
@@ -36,7 +36,7 @@ class ViewDependencies:
     for root, _, files in os.walk(self.directory_path):
       for file in files:
         file_path = os.path.join(root, file)
-        
+
         if file_path not in self.project_file_dependencies:
           unused_files.append(file_path)
 
@@ -46,7 +46,7 @@ class ViewDependencies:
       size_kb = ViewDependencies.file_size_kb(file)
       total_size += size_kb
       sort_files.append((size_kb, file))
-    
+
     sort_files.sort(reverse=True)
 
     unused_size_str = ViewDependencies.size_to_string(total_size)
@@ -54,17 +54,17 @@ class ViewDependencies:
     threshold_size_str = ViewDependencies.size_to_string(threshold_kb)
     print(f"Size of unused files: {unused_size_str} (out of {project_size_str})")
     print(f"Showing list of unused files above {threshold_size_str}:")
-    
+
     for file in sort_files:
       if file[0] < threshold_kb:
         break
 
       if ViewDependencies.get_file_extension(file[1]) in exclude_extensions:
         continue
-      
+
       size_str = ViewDependencies.size_to_string(file[0])
       print(f"{size_str}: {file[1]}")
-  
+
 
   def show_unused_directories(self):
     print("Unused directories:")
@@ -98,7 +98,7 @@ class ViewDependencies:
     if not os.path.isdir(path_to_dependency):
       self.log_message(1, f"Directory path doesn't exist: {path_to_dependency}")
       return
-    
+
     used_files = self.dir_used_files(path_to_dependency)
 
     if (len(used_files) == 0):
@@ -108,6 +108,23 @@ class ViewDependencies:
       for file in used_files:
         print(file)
 
+  def show_unused_files_in_directory(self, directory_path):
+    path_to_dependency = os.path.join(self.directory_path, directory_path)
+    path_to_dependency = os.path.abspath(path_to_dependency)
+    path_to_dependency = os.path.normpath(path_to_dependency)
+
+    if not os.path.isdir(path_to_dependency):
+      self.log_message(1, f"Directory path doesn't exist: {path_to_dependency}")
+      return
+
+    unused_files = self.dir_unused_files(path_to_dependency)
+
+    if (len(unused_files) == 0):
+      print(f"The directory {path_to_dependency} doesn't contain unused files.")
+    else:
+      print(f"Unused files in {path_to_dependency}:")
+      for file in unused_files:
+        print(file)
 
   def get_directory_dependencies(self, path_to_directory):
     for root, _, files in os.walk(path_to_directory):
@@ -119,7 +136,7 @@ class ViewDependencies:
             self.process_file_dependencies(file_path)
         else:
           self.log_message(2, f"directory dependency does not exist: {file_path}")
-        
+
 
   def process_file_dependencies(self, path_to_file):
     if path_to_file in self.project_checked_files:
@@ -151,7 +168,7 @@ class ViewDependencies:
 
     for i in range(len(file_dependencies)):
       file_dependencies[i] = os.path.normpath(file_dependencies[i])
-      
+
     return file_dependencies
 
 
@@ -170,7 +187,7 @@ class ViewDependencies:
         continue
 
       file_list.append(dependency_path)
-    
+
     return file_list
 
 
@@ -191,10 +208,10 @@ class ViewDependencies:
         file_name += ".js"
         dependency_name = os.path.join(dirname, file_name)
         file_list.append(dependency_name)
-    
+
     # Procesar otros tipos de paths usando patrón genérico
     # Si el path tiene algun directorio en común con el archivo, asumir que está
-    # en ese directorio. 
+    # en ese directorio.
     matches = re.findall(general_search_pattern, file_as_string)
 
     for match in matches:
@@ -203,13 +220,13 @@ class ViewDependencies:
       # Saltar archivos sin folder en arhivos .js
       if os.path.dirname(dependency) == "":
         continue
-      
+
       discard, dependency_path = self.possible_paths(path_to_file, dependency)
       if discard:
         continue
 
       file_list.append(dependency_path)
-    
+
     return file_list
 
 
@@ -228,7 +245,7 @@ class ViewDependencies:
     # If merged path wasn't found, try attaching the path to the original directory.
     if not os.path.isfile(dependency_path):
       discard, dependency_path = self.discard_path(dirname, dependency_path_in_file)
-    
+
     if os.path.isfile(dependency_path):
       self.log_message(3, f"Found dependency: {dependency_path}.")
     return [discard, dependency_path]
@@ -272,10 +289,10 @@ class ViewDependencies:
     while len(path) > 1 and path != past:
       folders.append(os.path.dirname(path))
       past = path
-      path = os.path.dirname(path)      
+      path = os.path.dirname(path)
 
     list.reverse(folders)
-    return folders 
+    return folders
 
 
   def remove_contained_directories(directory_list):
@@ -289,7 +306,7 @@ class ViewDependencies:
 
       if not contained:
         directories.append(directory_list[i])
-      
+
     return directories
 
 
@@ -299,7 +316,7 @@ class ViewDependencies:
       for file in files:
         file_path = os.path.join(root, file)
         total_size += ViewDependencies.file_size_kb(file_path)
-    
+
     return total_size
 
 
@@ -313,7 +330,7 @@ class ViewDependencies:
         file_path = os.path.join(root, file)
         if file_path in self.project_file_dependencies:
             return False
-    
+
     return True
 
 
@@ -324,14 +341,24 @@ class ViewDependencies:
         file_path = os.path.join(root, file)
         if file_path in self.project_file_dependencies:
             used_dir_files.append(file_path)
-    
+
     return used_dir_files
+
+  def dir_unused_files(self, directory):
+    unused_dir_files = []
+    for root, _, files in os.walk(directory):
+      for file in files:
+        file_path = os.path.join(root, file)
+        if file_path not in self.project_file_dependencies:
+            unused_dir_files.append(file_path)
+
+    return unused_dir_files
 
 
   def get_file_extension(path_to_file):
     _, ext = os.path.splitext(path_to_file)
     return ext
-  
+
 
   def all_file_extensions(directory_path):
     file_types = set()
@@ -369,7 +396,7 @@ class ViewDependencies:
   # Remove line breaks
   def clean_string(file_as_string):
     return file_as_string.replace('\n', '')
-  
+
 
   def log_message(self, log_level, message):
 
