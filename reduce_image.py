@@ -31,7 +31,7 @@ class ImageReduction:
     # Muy poco recomendable ponerlo en true;
     self.reduce_all_valid_files = reduce_all_valid_files
 
-    # Limites de imagen. Se usan cuando resize esta activo
+    # Limites de imagen. Se usan cuando resize está activo
     self.max_img_width_px = max_img_width_px
     self.max_img_height_px = max_img_height_px
 
@@ -95,8 +95,12 @@ class ImageReduction:
         output_path = self.insert_prefix(self.output_resize_prefix, file_path)
 
         if not os.path.exists(output_path):
-            resized = self.reduce_dimensions(image)
-            resized.save(output_path, optimize=True)
+            if self.file_extension(file_path) == ".gif":
+                self.resize_limit_gif(file_path, image.width, image.height)
+            else:
+              resized = self.reduce_dimensions(image)
+              resized.save(output_path, optimize=True)
+
             self.display_result(output_path, file_path)
         else:
             self.display_result("exists", output_path)
@@ -199,7 +203,7 @@ class ImageReduction:
       if percentage > 100:
         print(f"WARNING: file size INCREASED for {output}.")
       if percentage < 100 and out_size > self.threshold_kb:
-        print(f"Warning: file size reduced but image remains above theshold for {output}.")
+        print(f"Warning: file size reduced but image remains above threshold for {output}.")
 
   def was_resized(self, output_path, input_file):
     if os.path.basename(output_path).startswith(self.output_resize_prefix):
@@ -302,6 +306,27 @@ class ImageReduction:
 
     output_path = self.insert_prefix(self.output_resize_prefix, path_to_file)
     return self.modify_gif(path_to_file, output_path, change_scale=True, change_quality=False)
+
+
+  def resize_limit_gif(self, path_to_file, width, height):
+    c_prev = self.colors_
+    sc_prev = self.scale_ratio
+    lf_prev = self.lossiness_factor
+
+    if width > self.max_img_width_px and self.max_img_width_px > 0:
+        width_reduction = round(self.max_img_width_px / width, 1)
+        self.scale_ratio = str(width_reduction)
+    elif height > self.max_img_height_px and self.max_img_height_px > 0:
+        height_reduction = round(self.max_img_height_px / height, 1)
+        self.scale_ratio = str(width_reduction)
+        
+    if sc_prev != self.scale_ratio:
+      self.modify_gif_options(c_prev, self.scale_ratio, lf_prev)
+      self.resize_gif(path_to_file)
+    else:
+      print(f"Info: image is within specified limit dimensions: {path_to_file}")
+
+    self.modify_gif_options(c_prev, sc_prev, lf_prev)
 
 
   def modify_gif(self, path_to_file, output_path, change_scale=False, change_quality=False):

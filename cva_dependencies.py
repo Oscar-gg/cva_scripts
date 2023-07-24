@@ -102,7 +102,7 @@ class ViewDependencies:
     used_files = self.dir_used_files(path_to_dependency)
 
     if (len(used_files) == 0):
-      print(f"The directory {path_to_dependency} doesn't contained dependency files.")
+      print(f"The directory {path_to_dependency} doesn't contain dependency files.")
     else:
       print(f"Used files in {path_to_dependency}:")
       for file in used_files:
@@ -126,6 +126,7 @@ class ViewDependencies:
       return
 
     self.project_checked_files.add(path_to_file)
+    self.project_file_dependencies.add(path_to_file)
 
     file_dependencies_list = self.general_file_dependencies(path_to_file)
 
@@ -140,12 +141,18 @@ class ViewDependencies:
 
   def general_file_dependencies(self, path_to_file):
     ext = ViewDependencies.get_file_extension(path_to_file)
+    file_dependencies = []
     if ext in [".js"]:
-      return self.get_javascript_file_dependencies(path_to_file, self.search_pattern)
+      file_dependencies = self.get_javascript_file_dependencies(path_to_file, self.search_pattern)
     elif ext in self.project_extensions:
-      return self.get_file_dependencies(path_to_file, self.search_pattern)
+      file_dependencies = self.get_file_dependencies(path_to_file, self.search_pattern)
     else:
       self.log_message(2, f"Extension {ext} is not included: {path_to_file}")
+
+    for i in range(len(file_dependencies)):
+      file_dependencies[i] = os.path.normpath(file_dependencies[i])
+      
+    return file_dependencies
 
 
   def get_file_dependencies(self, path_to_file, search_pattern):
@@ -171,7 +178,7 @@ class ViewDependencies:
     file_list = []
 
     # Para imports especificos de javascript
-    js_pattern = r"""import(\s*([^;<>]+)\s*from\s*|\s+)(["'])([^"\']+)(\3);"""
+    js_pattern = r"""import(\s*([^;<>]+)\s*from\s*|\s+)(["'])([^"\';]+)(\3);?"""
 
     file_as_string = ViewDependencies.read_file_as_string(path_to_file)
     matches_javascript = re.findall(js_pattern, file_as_string)
@@ -181,6 +188,7 @@ class ViewDependencies:
       file_name = match[3]
       # Ignorar file si no tiene directorio, añadir file si tiene algún directorio.
       if not os.path.dirname(file_name) == "":
+        file_name += ".js"
         dependency_name = os.path.join(dirname, file_name)
         file_list.append(dependency_name)
     
